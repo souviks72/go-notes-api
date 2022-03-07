@@ -54,10 +54,27 @@ func getNoteById(c echo.Context) error {
 	return c.JSON(http.StatusBadRequest, map[string]string{"msg": "Id not found"})
 }
 
+func deleteNote(c echo.Context) error {
+	id,err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest,map[string]string{"msg": "Invalid id in request path"})
+	}
+
+	for i, n := range notes {
+		if n.ID == id {
+			notes = append(notes[0:i],notes[i+1:]...)
+			return c.JSON(http.StatusOK, notes)
+		}
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"msg": "ID not found"})
+}
+
 func main() {
 	e := echo.New()
 	e.POST("/note", createNote)
 	e.GET("/notes", getNote)
 	e.GET("/note/:id", getNoteById)
+	e.DELETE("/note/:id", deleteNote)
 	e.Logger.Fatal(e.Start(":8080"))
 }
