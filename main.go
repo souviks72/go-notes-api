@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -8,8 +9,8 @@ import (
 )
 
 type Note struct {
-	ID int `json:"id"`
-	Title string `json:"title"`
+	ID      int    `json:"id"`
+	Title   string `json:"title"`
 	Content string `json:"content"`
 }
 
@@ -70,11 +71,43 @@ func deleteNote(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"msg": "ID not found"})
 }
 
+func editNote(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest,map[string]string{"msg": "Invalid id in request path"})
+	}
+
+	note := &Note{}
+	err = c.Bind(note)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest,map[string]string{"msg": "Invalid request body"})
+	}
+	
+	for i, n := range notes{
+		if n.ID == id {
+			
+			if note.Content !="" {
+				n.Content = note.Content
+			}
+
+			if note.Title !="" {
+				n.Title = note.Title
+			}
+			fmt.Println(n)
+			notes[i] = n 
+			return c.JSON(http.StatusOK, n)
+		}
+	}
+
+	return c.JSON(http.StatusNotFound, map[string]string{"msg": "Id no found"})
+}
+
 func main() {
 	e := echo.New()
 	e.POST("/note", createNote)
 	e.GET("/notes", getNote)
 	e.GET("/note/:id", getNoteById)
 	e.DELETE("/note/:id", deleteNote)
+	e.PATCH("/note/:id", editNote)
 	e.Logger.Fatal(e.Start(":8080"))
 }
