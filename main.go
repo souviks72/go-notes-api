@@ -31,7 +31,7 @@ func main() {
 	e.POST("/note", notesHandler.CreateNote)
 	e.GET("/notes", notesHandler.GetNote)
 	e.GET("/note/:id", notesHandler.GetNoteById)
-	// e.DELETE("/note/:id", notesHandler.DeleteNote)
-	// e.PATCH("/note/:id", notesHandler.EditNote)
+	e.DELETE("/note/:id", notesHandler.DeleteNote)
+	e.PATCH("/note/:id", notesHandler.EditNote)
 	e.Logger.Fatal(e.Start(":8080"))
 }

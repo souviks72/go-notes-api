@@ -8,6 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 
@@ -66,48 +67,48 @@ func (N *NotesHandler) GetNoteById(c echo.Context) error {
 	return c.JSON(http.StatusBadRequest, note)
 }
 
-// func (N *NotesHandler) DeleteNote(c echo.Context) error {
-// 	id, err := strconv.Atoi(c.Param("id"))
-// 	if err != nil {
-// 		return c.JSON(http.StatusBadRequest, map[string]string{"msg": "Invalid id in request path"})
-// 	}
+func (N *NotesHandler) DeleteNote(c echo.Context) error {
+	id, err := primitive.ObjectIDFromHex((c.Param("id")))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"msg": "Invalid id in request path"})
+	}
 
-// 	for i, n := range notes {
-// 		if n.ID == id {
-// 			notes = append(notes[0:i], notes[i+1:]...)
-// 			return c.JSON(http.StatusOK, notes)
-// 		}
-// 	}
+	res := N.NotesCollection.FindOneAndDelete(context.Background(), bson.M{"_id": id})
+	fmt.Println(res)
 
-// 	return c.JSON(http.StatusOK, map[string]string{"msg": "ID not found"})
-// }
+	return c.JSON(http.StatusOK, map[string]string{"msg": "Deleted"})
+}
 
-// func (N *NotesHandler) EditNote(c echo.Context) error {
-// 	id, err := strconv.Atoi(c.Param("id"))
-// 	if err != nil {
-// 		return c.JSON(http.StatusBadRequest, map[string]string{"msg": "Invalid id in request path"})
-// 	}
+func (N *NotesHandler) EditNote(c echo.Context) error {
+	var note Note
+	id, err := primitive.ObjectIDFromHex(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"msg": "Invalid id in request path"})
+	}
 
-// 	note := &Note{}
-// 	err = c.Bind(note)
-// 	if err != nil {
-// 		return c.JSON(http.StatusBadRequest, map[string]string{"msg": "Invalid request body"})
-// 	}
+	editFieldMap := map[string]interface{}{}
+	err = c.Bind(&editFieldMap)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"msg": "Invalid request body"})
+	}
 
-// 	for i, n := range notes {
-// 		if n.ID == id {
-// 			if note.Content != "" {
-// 				n.Content = note.Content
-// 			}
+	editBsonMap := bson.M{}
+	for k,v := range editFieldMap{
+		editBsonMap[k] = v
+	}
+	update := bson.M{
+		"$set": editBsonMap,
+	}
 
-// 			if note.Title != "" {
-// 				n.Title = note.Title
-// 			}
-			
-// 			notes[i] = n
-// 			return c.JSON(http.StatusOK, n)
-// 		}
-// 	}
+	after := options.After
+	upsert := true
+	opt := options.FindOneAndUpdateOptions{
+		ReturnDocument: &after,
+		Upsert: &upsert,
+	}
+	
+	res := N.NotesCollection.FindOneAndUpdate(context.Background(), bson.M{"_id": id},update, &opt)
+	res.Decode(&note)
 
-// 	return c.JSON(http.StatusNotFound, map[string]string{"msg": "Id no found"})
-// }
+	return c.JSON(http.StatusNotFound, note)
+}
