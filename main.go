@@ -27,11 +27,14 @@ func main() {
 
 	notesDB := mongoclient.Database("go-notes")
 	notesHandler := handlers.NotesHandler{NotesCollection: notesDB.Collection("notes")}
+	userHandler := handlers.UserHandler{UserCollection: notesDB.Collection("users")}
 	
 	e.POST("/note", notesHandler.CreateNote)
 	e.GET("/notes", notesHandler.GetNote)
 	e.GET("/note/:id", notesHandler.GetNoteById)
 	e.DELETE("/note/:id", notesHandler.DeleteNote)
 	e.PATCH("/note/:id", notesHandler.EditNote)
+
+	e.POST("/user/signup", userHandler.CreateUser)
 	e.Logger.Fatal(e.Start(":8080"))
 }

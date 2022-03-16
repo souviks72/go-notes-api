@@ -12,3 +12,12 @@ type Note struct {
 type NotesHandler struct {
 	NotesCollection *mongo.Collection
 }
+
+type User struct {
+	Name     string `json:"name" bson:"name"`
+	Password string `json:"password" bson:"password"`
+}
+
+type UserHandler struct {
+	UserCollection *mongo.Collection
+}
