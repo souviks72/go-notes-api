@@ -36,5 +36,6 @@ func main() {
 	e.PATCH("/note/:id", notesHandler.EditNote)
 
 	e.POST("/user/signup", userHandler.CreateUser)
+	e.POST("/user/signin", userHandler.SigninUser)
 	e.Logger.Fatal(e.Start(":8080"))
 }

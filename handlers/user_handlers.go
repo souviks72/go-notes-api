@@ -33,27 +33,57 @@ func (U *UserHandler) CreateUser(c echo.Context) error {
 	}
 
 	user.Password, _ = HashPassword(user.Password)
-
 	_, err = U.UserCollection.InsertOne(ctx,user)
 	if err != nil{
 		fmt.Println("CreateUser Insertion Failed %+v\n",err)
 		return c.JSON(http.StatusInternalServerError, "DB insertion failed")
 	}
 
-	claims := jwt.MapClaims{}
-	claims["authorized"] = true
-	claims["user"] = user.Name
-	claims["exp"] = time.Now().Add(time.Minute * 15).Unix()
-
-	at := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	token, err := at.SignedString([]byte("secretkey"))
+	token, err := CreateToken(user)
 	if err != nil {
-		fmt.Printf("Error signing jwt token %+v\n", err)
+		fmt.Println("Error creating token: %+v\n", err)
 		return err
 	}
 
 	c.Response().Header().Set("x-auth-token", token)	
 	return c.JSON(http.StatusCreated, user)
+}
+
+func (U *UserHandler) SigninUser(c echo.Context) error {
+	ctx := context.Background()
+
+	var userReq, user User 
+	err := c.Bind(&userReq)
+	if err != nil {
+		fmt.Println("Error binding request body %+v\n", err)
+		return err 
+	}
+	
+	err = U.UserCollection.FindOne(ctx, bson.M{"name": userReq.Name}).Decode(&user)
+	if err != nil && err != mongo.ErrNoDocuments{
+		fmt.Println("Error binding request body %+v\n", err)
+		return err 
+	}else if err == mongo.ErrNoDocuments{
+		fmt.Printf("User not found %+v\n", err)
+		return err
+	}
+
+	err = ComparePassword(user.Password, userReq.Password)
+	if err != nil {
+		fmt.Println("Incorrect password %+v\n", err)
+		return err 
+	}
+
+	token, err := CreateToken(user)
+	if err != nil {
+		fmt.Println("Error creating token: %+v\n", err)
+		return err
+	}
+
+	user.Password = ""
+
+	c.Response().Header().Set("x-auth-token", token)
+	return c.JSON(http.StatusAccepted, user)
 }
 
 func HashPassword(password string) (string, error) {
@@ -71,4 +101,20 @@ func ComparePassword(hashedPassword string, password string) error {
 	hash := []byte(hashedPassword)
 	err := bcrypt.CompareHashAndPassword(hash, pwd)
 	return err
+}
+
+func CreateToken(user User) (string, error) {
+	claims := jwt.MapClaims{}
+	claims["authorized"] = true
+	claims["user"] = user.Name
+	claims["exp"] = time.Now().Add(time.Minute * 15).Unix()
+
+	at := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token, err := at.SignedString([]byte("secretkey"))
+	if err != nil {
+		fmt.Printf("Error signing jwt token %+v\n", err)
+		return "",err
+	}
+
+	return token, nil
 }
