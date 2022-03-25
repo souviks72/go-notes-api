@@ -15,7 +15,7 @@ type NotesHandler struct {
 
 type User struct {
 	Name     string `json:"name" bson:"name"`
-	Password string `json:"password" bson:"password"`
+	Password string `json:"password,omitempty" bson:"password"`
 }
 
 type UserHandler struct {

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/souviks72/go-notes-api/handlers"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -28,12 +29,16 @@ func main() {
 	notesDB := mongoclient.Database("go-notes")
 	notesHandler := handlers.NotesHandler{NotesCollection: notesDB.Collection("notes")}
 	userHandler := handlers.UserHandler{UserCollection: notesDB.Collection("users")}
+
+	config := middleware.JWTConfig{
+        SigningKey: []byte("secret"),
+    }
 	
-	e.POST("/note", notesHandler.CreateNote)
-	e.GET("/notes", notesHandler.GetNote)
-	e.GET("/note/:id", notesHandler.GetNoteById)
-	e.DELETE("/note/:id", notesHandler.DeleteNote)
-	e.PATCH("/note/:id", notesHandler.EditNote)
+	e.POST("/note", notesHandler.CreateNote, middleware.JWTWithConfig(config))
+	e.GET("/notes", notesHandler.GetNote, middleware.JWTWithConfig(config))
+	e.GET("/note/:id", notesHandler.GetNoteById, middleware.JWTWithConfig(config))
+	e.DELETE("/note/:id", notesHandler.DeleteNote, middleware.JWTWithConfig(config))
+	e.PATCH("/note/:id", notesHandler.EditNote, middleware.JWTWithConfig(config))
 
 	e.POST("/user/signup", userHandler.CreateUser)
 	e.POST("/user/signin", userHandler.SigninUser)

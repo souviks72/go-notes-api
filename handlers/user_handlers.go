@@ -110,7 +110,7 @@ func CreateToken(user User) (string, error) {
 	claims["exp"] = time.Now().Add(time.Minute * 15).Unix()
 
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	token, err := at.SignedString([]byte("secretkey"))
+	token, err := at.SignedString([]byte("secret"))
 	if err != nil {
 		fmt.Printf("Error signing jwt token %+v\n", err)
 		return "",err
