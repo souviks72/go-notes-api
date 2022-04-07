@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
@@ -104,10 +103,10 @@ func ComparePassword(hashedPassword string, password string) error {
 }
 
 func CreateToken(user User) (string, error) {
-	claims := jwt.MapClaims{}
-	claims["authorized"] = true
-	claims["user"] = user.Name
-	claims["exp"] = time.Now().Add(time.Minute * 15).Unix()
+	claims := ClaimsStruct{
+		UserName: user.Name,
+		Authorised: true,
+	}
 
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	token, err := at.SignedString([]byte("secret"))

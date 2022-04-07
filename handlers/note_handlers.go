@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
+	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -18,6 +20,14 @@ func (N *NotesHandler) CreateNote(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"msg": "Please send proper request body"})
 	}
+
+	
+	token := strings.Split(c.Request().Header.Get("Authorization")," ")[1]
+	username,err := parseToken(token)
+	if err!= nil{
+		return echo.NewHTTPError(http.StatusInternalServerError, "Error parsing token")
+	}
+	note.Username = username
 
 	res, err := N.NotesCollection.InsertOne(context.Background(),note)
 	if err != nil{
@@ -111,4 +121,16 @@ func (N *NotesHandler) EditNote(c echo.Context) error {
 	res.Decode(&note)
 
 	return c.JSON(http.StatusNotFound, note)
+}
+
+func parseToken(tokenString string) (string, error){
+	tkn, err := jwt.ParseWithClaims(tokenString, &ClaimsStruct{}, func(token *jwt.Token)(interface{}, error){
+		return []byte("secret"), nil
+	})
+
+	if claims, ok := tkn.Claims.(*ClaimsStruct); ok && tkn.Valid {
+		return claims.UserName,nil
+	} else {
+		return "",err
+	}
 }
